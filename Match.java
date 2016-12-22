@@ -8,6 +8,12 @@ import java.util.Map;
 import java.util.TreeSet;
 
 public class Match {
+
+	
+	/* determines if there are duplicates of articles and returns the unique ones
+	 * input: ArrayList of Articles
+	 * output: ArrayList of Articles
+	*/
 	public static ArrayList<Article> findDuplicates(ArrayList<Article> articles) {
 		//sort articles by year and then by title
 		Collections.sort(articles);
@@ -37,14 +43,12 @@ public class Match {
 				if (title.equals(comparison)) {
 					duplicates.add(copy.get(j).id);
 					currYears.get(i).numCited++;
-					currYears.get(i).parentArticle.add(String.valueOf(copy.get(j).parentNumber));
+//					currYears.get(i).parentArticle.add(String.valueOf(copy.get(j).parentNumber));
+					currYears.get(i).parentArticle.add(copy.get(j).parentNumber);
 				}
 			}
 		}
-
-
-
-
+		
 		articles = currYears;
 		//remove the duplicates based off of what we found
 		for(Article curr: copy2) {
@@ -55,7 +59,7 @@ public class Match {
 			}
 		}
 
-		//write the unique ones out to a file
+		//write the unique ones out to a file- mostly for testing
 		try {
 			FileWriter fw = new FileWriter("unique.txt");
 			BufferedWriter bw = new BufferedWriter(fw);
@@ -73,7 +77,14 @@ public class Match {
 
 		return currYears;
 	}
-
+	
+	
+	/* The pair method goes through the now unique ArrayList of Articles, figures out pairs
+	 * based on being +1 / -1 year away from each other as well as not having the same
+	 * authors overlapping, and then creates an ArrayList of Pairs based on this information,
+	 * which is returned.
+	 * 
+	 */
 	public static ArrayList<Pair> pair(ArrayList<Article> uniques) {
 		ArrayList<Article> multCited = new ArrayList<Article>();
 		int minYr = Integer.MAX_VALUE;
@@ -125,22 +136,28 @@ public class Match {
 			for (int i = baseYear.size() - 1; i >= 0; i--) {
 				copy.remove(baseYear.get(i));
 				for (int j = 0; j < copy.size(); j++) {
-					ArrayList<String> parent1arts = baseYear.get(i).parentArticle;
-					ArrayList<String> parent2arts = copy.get(j).parentArticle;
+//					ArrayList<String> parent1arts = baseYear.get(i).parentArticle;
+//					ArrayList<String> parent2arts = copy.get(j).parentArticle;
+					ArrayList<Integer> parent1arts = baseYear.get(i).parentArticle;
+					ArrayList<Integer> parent2arts = copy.get(j).parentArticle;
 					Collections.sort(parent1arts); 
 					Collections.sort(parent2arts);
 					int artNum1 = parent1arts.size() - 1;
 					int artNum2 = parent2arts.size() - 1;
 					while (artNum1 >= 0 && artNum2 >= 0) {
-						String art1 = parent1arts.get(artNum1).toUpperCase().trim();
-						String art2 = parent2arts.get(artNum2).toUpperCase().trim();
-						if (art1.compareTo(art2) == 0) {
+//						String art1 = parent1arts.get(artNum1).toUpperCase().trim();
+//						String art2 = parent2arts.get(artNum2).toUpperCase().trim();
+						int art1 = parent1arts.get(artNum1);
+						int art2 = parent2arts.get(artNum2);
+//						if (art1.compareTo(art2) == 0) {
+						if (art1 - art2 == 0) {
 							Pair pair = new Pair(baseYear.get(i), copy.get(j));
 							cocited.add(pair);
 							cocitedFinal.add(pair);
 							pair_count++;
 							break;
-						} else if(art1.compareTo(art2) > 0) {
+//						} else if(art1.compareTo(art2) > 0) {
+						} else if(art1 - art2> 0) {
 							artNum1--;
 						} else {
 							artNum2--;
@@ -179,6 +196,7 @@ public class Match {
 		}
 
 
+		//printing is for testing and metrics recording
 		System.out.println("Size of unique list: " + uniques.size());
 		System.out.println("Total number of pairs pre-author removal: " + pair_count);
 		System.out.println("Number of overlapping author pairs: " + overlap.size());
@@ -186,12 +204,18 @@ public class Match {
 		return cocitedFinal;
 	}
 
+	/*
+	 * Determines Jaccard Index of pairs, returns the same pairs but with the
+	 * indices updated.
+	 */
 	public static ArrayList<Pair> jaccard(ArrayList<Pair> pairs) {
 		int count = 0;
 		for (Pair pr : pairs) {
 			count++;
-			ArrayList<String> par1 = pr.one.parentArticle;
-			ArrayList<String> par2 = pr.two.parentArticle;
+//			ArrayList<String> par1 = pr.one.parentArticle;
+//			ArrayList<String> par2 = pr.two.parentArticle;
+			ArrayList<Integer> par1 = pr.one.parentArticle;
+			ArrayList<Integer> par2 = pr.two.parentArticle;
 			double total1 = par1.size() + 1;
 			double total2 = par2.size() + 1;
 			Collections.sort(par1); 
@@ -199,14 +223,18 @@ public class Match {
 			int artNum1 = par1.size() - 1;
 			int artNum2 = par2.size() - 1;
 			while (artNum1 >= 0 && artNum2 >= 0) {
-				String art1 = par1.get(artNum1);
-				String art2 = par2.get(artNum2);
-				if (art1.compareTo(art2) == 0) {
+//				String art1 = par1.get(artNum1);
+//				String art2 = par2.get(artNum2);
+				int art1 = par1.get(artNum1);
+				int art2 = par2.get(artNum2);
+//				if (art1.compareTo(art2) == 0) {
+				if (art1 - art2 == 0) {
 					pr.cocite++;
 					pr.comParents.add(art1);
 					artNum1--;
 					artNum2--;
-				} else if(art1.compareTo(art2) > 0) {
+//				} else if(art1.compareTo(art2) > 0) {
+				} else if(art1 - art2 > 0) {
 					artNum1--;
 				} else {
 					artNum2--;
@@ -223,15 +251,21 @@ public class Match {
 		return pairs;
 	}
 
+	/*
+	 * Returns the pairs with a jaccard index above a certain number, with the input
+	 * of the ArrayList of all Pairs, and the output of an ArrayList of the pairs with
+	 * above that jaccard index.
+	 */
 	public static ArrayList<Pair> filterPairs(ArrayList<Pair> allPairs) {
 		ArrayList<Pair> importantPairs = new ArrayList<Pair>();
 		int count = 0;
 		int allCount = 0;
+		double jaccIndex = 0.25;
 		try {
 			BufferedWriter bw = new BufferedWriter(new FileWriter("ImportantPairs.txt"));
 
 			for (Pair pr: allPairs) {
-				if (pr.jacc > 0.25) {
+				if (pr.jacc > jaccIndex) {
 					importantPairs.add(pr);
 					count++;
 					bw.write("Pair #: " + count + "\t");
@@ -247,7 +281,10 @@ public class Match {
 					System.out.println("Authors: " + pr.one.authors);
 					System.out.println("Authors: " + pr.two.authors);
 
-					for (String common : pr.comParents) {
+//					for (String common : pr.comParents) {
+//						System.out.println("Parent in common: " + common);
+//					}
+					for (int common : pr.comParents) {
 						System.out.println("Parent in common: " + common);
 					}
 				}
@@ -260,16 +297,35 @@ public class Match {
 		return importantPairs;
 	}
 
+	
+	/*
+	 * This method no longer works due to the change in the way we get our data
+	 * Must be edited
+	 * 
+	 * The original intent was to go through the important pairs, and using their parent
+	 * article numbers get the information from the original parent articles and add that
+	 * to the references to use later to determine which parent Articles to get PDF's for.
+	 * 
+	 * This is a little bit confusing because we now use the Article class for both
+	 * parent Articles and reference Articles but we used to use ParentArticles as a 
+	 * different class. The file reading portion does not work anymore because it
+	 * was a different way of gathering data. We will have to find a different way
+	 * to get the parent articles from the pairs.
+	 */
 	public static ArrayList<Pair> findParents(ArrayList<Pair> jaccPairs) {
 		String DOI;
 		String url;
 		String title;
 		int num;
 
-		TreeSet<String>  parentNumbers = new TreeSet<String>();
+//		TreeSet<String>  parentNumbers = new TreeSet<String>();
+		TreeSet<Integer>  parentNumbers = new TreeSet<Integer>();
 		ArrayList<ParentArticles> parents = new ArrayList<ParentArticles>();
 		for (Pair pr : jaccPairs) {
-			for (String parent : pr.comParents) {
+//			for (String parent : pr.comParents) {
+//				parentNumbers.add(parent);
+//			}
+			for (int parent : pr.comParents) {
 				parentNumbers.add(parent);
 			}
 		}
@@ -286,12 +342,14 @@ public class Match {
 			while (br.ready()){
 				if (line.startsWith("?PT")){
 					line2 = br.readLine();
-					for (String number: parentNumbers) {
+//					for (String number: parentNumbers) {
+					for (int number: parentNumbers) {
 						if (line2.startsWith("Article Number: " + number)) {
 							DOI = line.substring(line.indexOf("DI:") + 4, line.indexOf("Vol:"));
 							title = line.substring(line.indexOf("Name:") + 6, line.indexOf("Yr:"));
 							url = line.substring(line.indexOf("http"), line.indexOf("Affiliation"));
-							num = Integer.parseInt(number);
+//							num = Integer.parseInt(number);
+							num = number;
 							ParentArticles p = new ParentArticles(num, DOI, title, url);
 
 							parents.add(p);
@@ -311,8 +369,10 @@ public class Match {
 
 		int counter = 1;
 		for (Pair pr: jaccPairs) {
-			for (String number: pr.comParents) {
-				num = Integer.parseInt(number);
+//			for (String number: pr.comParents) {
+			for (int number: pr.comParents) {
+//				num = Integer.parseInt(number);
+				num = number;
 				int index = 0;
 				while (index < parents.size() && index >= 0) {
 					if (parents.get(index).parNum == num) {
@@ -400,9 +460,17 @@ public class Match {
 
 	/*ESSENTIALLY RUNS ENTIRE PROGRAM*/
 	public static void main(String[] args) {
-		ArrayList<Pair> test = pair(findDuplicates(createArticles.createObs()));
+		
+		String fileName = args[0];
+		String fileOutName = args[1];
+		ArrayList<Pair> test = pair(findDuplicates(FilterXML.findRefs(FilterXML.filter(fileName, fileOutName))));
+		
+		//findParents needs to be edited first
 		ArrayList<Pair> finalPairs = findParents(filterPairs(jaccard(test)));
+		
 		TreeSet<ParentArticles> parents = new TreeSet<ParentArticles>();
+		
+		//This part is for PDF text mining, might not be implementable yet
 		ArrayList<CC> ccList = TextMining.isolate(TextMining.createDictionaries());
 		ArrayList<Pair> inline = checkAuthors(ccList, finalPairs);
 

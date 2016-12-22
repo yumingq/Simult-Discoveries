@@ -6,7 +6,8 @@ public class Pair implements Comparable {
 	Article two;
 	int cocite;
 	double jacc;
-	ArrayList<String> comParents;
+//	ArrayList<String> comParents;
+	ArrayList<Integer> comParents;
 	ArrayList<ParentArticles> finalParents;
 	boolean inline;
 
@@ -19,7 +20,8 @@ public class Pair implements Comparable {
 		this.two = two;
 		cocite = 0;
 		jacc = 0;
-		comParents = new ArrayList<String>();
+//		comParents = new ArrayList<String>();
+		comParents = new ArrayList<Integer>();
 		finalParents = new ArrayList<ParentArticles>();
 		inline = false;
 	}
